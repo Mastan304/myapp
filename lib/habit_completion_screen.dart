@@ -3,6 +3,7 @@ import 'package:myapp/models/habit.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:myapp/database/database_helper.dart';
 import 'package:myapp/models/completion.dart';
+import 'package:myapp/utils/date_utils.dart';
 
 
 class HabitCompletionScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _HabitCompletionScreenState extends State<HabitCompletionScreen> {
     final completions = await DatabaseHelper().getCompletionsForHabit(widget.habit.id!);
     setState(() {
       _completedDates = completions
-          .map((completion) => DateTime.fromMillisecondsSinceEpoch(completion.completionDate * 1000))
+          .map((completion) => DateTime.fromMillisecondsSinceEpoch(completion.completionDate))
           .toList();
     });
   }
@@ -75,59 +76,8 @@ class _HabitCompletionScreenState extends State<HabitCompletionScreen> {
         });
 
         // Recalculate streaks after unmarking
-        final sortedCompletedDates = _completedDates.toList()..sort();
-        int currentStreak = 0;
-        int longestStreak = 0;
-
-        if (sortedCompletedDates.isNotEmpty) {
-          // Calculate current streak
-          final now = DateTime.now();
-          if (DateUtils.isSameDay(sortedCompletedDates.last.millisecondsSinceEpoch, now.millisecondsSinceEpoch)) {
-             currentStreak = 1;
-             DateTime lastDate = sortedCompletedDates.last;
-             for (int i = sortedCompletedDates.length - 2; i >= 0; i--) {
-               if (DateUtils.isYesterday(sortedCompletedDates[i].millisecondsSinceEpoch)) {
-                 currentStreak++;
-                 lastDate = sortedCompletedDates[i];
-               } else if (!DateUtils.isSameDay(sortedCompletedDates[i].millisecondsSinceEpoch, lastDate.millisecondsSinceEpoch)) {
-                  break;
-               }
-             }
-          } else {
-              final yesterday = now.subtract(const Duration(days: 1));
-               if (DateUtils.isSameDay(sortedCompletedDates.last.millisecondsSinceEpoch, yesterday.millisecondsSinceEpoch)) {
-                 currentStreak = 1;
-                 DateTime lastDate = sortedCompletedDates.last;
-                 for (int i = sortedCompletedDates.length - 2; i >= 0; i--) {
-                   if (DateUtils.isYesterday(sortedCompletedDates[i].millisecondsSinceEpoch)) {
-                     currentStreak++;
-                     lastDate = sortedCompletedDates[i];
-                   } else if (!DateUtils.isSameDay(sortedCompletedDates[i].millisecondsSinceEpoch, lastDate.millisecondsSinceEpoch)) {
-                     break;
-                   }
-                 }
-               } else {
-                 currentStreak = 0;
-               }
-          }
-
-
-          // Calculate longest streak
-          int tempStreak = 0;
-          DateTime? lastDate = null;
-          for (int i = 0; i < sortedCompletedDates.length; i++) {
-             if (lastDate == null || DateUtils.isYesterday(sortedCompletedDates[i].millisecondsSinceEpoch)) {
-              tempStreak++;
-            } else if (!DateUtils.isSameDay(sortedCompletedDates[i].millisecondsSinceEpoch, lastDate.millisecondsSinceEpoch)){
-              tempStreak = 1;
-            }
-
-            if (tempStreak > longestStreak) {
-              longestStreak = tempStreak;
-            }
-            lastDate = sortedCompletedDates[i];
-          }
-        }
+        final currentStreak = DateUtils.calculateCurrentStreak(_completedDates);
+        final longestStreak = DateUtils.calculateLongestStreak(_completedDates);
 
         // Update habit object with new streaks
         widget.habit.currentStreak = currentStreak;
@@ -148,59 +98,8 @@ class _HabitCompletionScreenState extends State<HabitCompletionScreen> {
         });
 
         // Recalculate streaks after marking
-        final sortedCompletedDates = _completedDates.toList()..sort();
-        int currentStreak = 0;
-        int longestStreak = 0;
-
-        if (sortedCompletedDates.isNotEmpty) {
-          // Calculate current streak
-          final now = DateTime.now();
-          if (DateUtils.isSameDay(sortedCompletedDates.last.millisecondsSinceEpoch, now.millisecondsSinceEpoch)) {
-             currentStreak = 1;
-             DateTime lastDate = sortedCompletedDates.last;
-             for (int i = sortedCompletedDates.length - 2; i >= 0; i--) {
-               if (DateUtils.isYesterday(sortedCompletedDates[i].millisecondsSinceEpoch)) {
-                 currentStreak++;
-                 lastDate = sortedCompletedDates[i];
-               } else if (!DateUtils.isSameDay(sortedCompletedDates[i].millisecondsSinceEpoch, lastDate.millisecondsSinceEpoch)) {
-                  break;
-               }
-             }
-          } else {
-              final yesterday = now.subtract(const Duration(days: 1));
-               if (DateUtils.isSameDay(sortedCompletedDates.last.millisecondsSinceEpoch, yesterday.millisecondsSinceEpoch)) {
-                 currentStreak = 1;
-                 DateTime lastDate = sortedCompletedDates.last;
-                 for (int i = sortedCompletedDates.length - 2; i >= 0; i--) {
-                   if (DateUtils.isYesterday(sortedCompletedDates[i].millisecondsSinceEpoch)) {
-                     currentStreak++;
-                     lastDate = sortedCompletedDates[i];
-                   } else if (!DateUtils.isSameDay(sortedCompletedDates[i].millisecondsSinceEpoch, lastDate.millisecondsSinceEpoch)) {
-                     break;
-                   }
-                 }
-               } else {
-                 currentStreak = 0;
-               }
-          }
-
-
-          // Calculate longest streak
-          int tempStreak = 0;
-          DateTime? lastDate = null;
-          for (int i = 0; i < sortedCompletedDates.length; i++) {
-             if (lastDate == null || DateUtils.isYesterday(sortedCompletedDates[i].millisecondsSinceEpoch)) {
-              tempStreak++;
-            } else if (!DateUtils.isSameDay(sortedCompletedDates[i].millisecondsSinceEpoch, lastDate.millisecondsSinceEpoch)){
-              tempStreak = 1;
-            }
-
-            if (tempStreak > longestStreak) {
-              longestStreak = tempStreak;
-            }
-            lastDate = sortedCompletedDates[i];
-          }
-        }
+        final currentStreak = DateUtils.calculateCurrentStreak(_completedDates);
+        final longestStreak = DateUtils.calculateLongestStreak(_completedDates);
 
 
         // Update habit object with new streaks
@@ -212,7 +111,7 @@ class _HabitCompletionScreenState extends State<HabitCompletionScreen> {
       }
     }
   }
-},
+}
 
   }
 },

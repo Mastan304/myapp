@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:myapp/models/habit.dart'; // Adjust the import path if necessary
+import 'package:myapp/models/habit.dart';
+import 'package:myapp/models/completion.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -26,8 +27,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 4, // Increment the version for schema changes
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade, // Add onUpgrade callback
     );
   }
 
@@ -40,25 +42,53 @@ class DatabaseHelper {
         currentStreak INTEGER,
         longestStreak INTEGER,
         imagePath TEXT,
-        iconCodePoint INTEGER
+        iconCodePoint INTEGER,
+        createdTime INTEGER,
+        reminderTime TEXT,
+        reminderDays TEXT,
+        goalType TEXT,
+        goalValue INTEGER,
+        goalUnit TEXT,
+        goalFrequency TEXT
       )
       '''
     );
- await db.execute(
- '''
- CREATE TABLE completions(
- id INTEGER PRIMARY KEY AUTOINCREMENT,
- habitId INTEGER,
- completionDate INTEGER,
- FOREIGN KEY (habitId) REFERENCES habits(id) ON DELETE CASCADE
- )
- '''
- );
+    await db.execute(
+      '''
+      CREATE TABLE completions(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        habitId INTEGER,
+        completionDate INTEGER,
+        notes TEXT
+        FOREIGN KEY (habitId) REFERENCES habits(id) ON DELETE CASCADE
+      )
+      '''
+    );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add new columns if upgrading from version 1 to 2 (reminder fields)
+      await db.execute('ALTER TABLE habits ADD COLUMN createdTime INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE habits ADD COLUMN reminderTime TEXT');
+      await db.execute('ALTER TABLE habits ADD COLUMN reminderDays TEXT');
+    }
+    if (oldVersion < 3) {
+      // Add new columns if upgrading from version 2 to 3 (goal fields)
+      await db.execute('ALTER TABLE habits ADD COLUMN goalType TEXT');
+      await db.execute('ALTER TABLE habits ADD COLUMN goalValue INTEGER');
+      await db.execute('ALTER TABLE habits ADD COLUMN goalUnit TEXT');
+      await db.execute('ALTER TABLE habits ADD COLUMN goalFrequency TEXT');
+    }
+    if (oldVersion < 4) {
+      // Add new column if upgrading from version 3 to 4 (notes field)
+      await db.execute('ALTER TABLE completions ADD COLUMN notes TEXT');
+    }
   }
 
   Future<int> insertHabit(Habit habit) async {
     final db = await database;
- return await db.insert('habits', habit.toMapWithoutId());
+    return await db.insert('habits', habit.toMap());
   }
 
   Future<List<Habit>> getHabits() async {
@@ -66,18 +96,11 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query('habits');
 
     return List.generate(maps.length, (i) {
-      return Habit(
-        id: maps[i]['id'],
-        name: maps[i]['name'],
-        currentStreak: maps[i]['currentStreak'],
-        longestStreak: maps[i]['longestStreak'],
-        imagePath: maps[i]['imagePath'],
- iconCodePoint: maps[i]['iconCodePoint'],
-      );
+      return Habit.fromMap(maps[i]);
     });
   }
-  
-  Future<int?> getLastCompletionDateForHabit(int habitId) async { // Corrected method signature
+
+  Future<int?> getLastCompletionDateForHabit(int habitId) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'completions',
@@ -102,15 +125,11 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query(
       'completions',
       where: 'habitId = ?',
-      whereArgs: [habitId], // Use habitId directly
+      whereArgs: [habitId],
     );
 
     return List.generate(maps.length, (i) {
-      return Completion(
-        id: maps[i]['id'],
-        habitId: maps[i]['habitId'],
-        completionDate: DateTime.fromMillisecondsSinceEpoch(maps[i]['completionDate']),
-      ); // Convert timestamp to DateTime
+      return Completion.fromMap(maps[i]);
     });
   }
 
@@ -119,7 +138,7 @@ class DatabaseHelper {
     final today = DateTime.now();
     final startOfToday = DateTime(today.year, today.month, today.day);
     final count = await db.rawQuery('SELECT COUNT(*) FROM completions WHERE habitId = ? AND completionDate >= ?', [habitId, startOfToday.millisecondsSinceEpoch]);
-    return Sqflite.firstIntValue(count)! > 0; // Use null assertion operator
+    return Sqflite.firstIntValue(count)! > 0;
   }
 
   Future<int> deleteCompletionForHabitAndDate(int habitId, int dateTimestamp) async {
@@ -128,13 +147,14 @@ class DatabaseHelper {
       'completions',
       where: 'habitId = ? AND completionDate = ?',
       whereArgs: [habitId, dateTimestamp],
+    );
   }
 
   Future<int> updateHabit(Habit habit) async {
     final db = await database;
     return await db.update(
       'habits',
-      habit.toMap(), // Assuming toMap includes the iconCodePoint now
+      habit.toMap(),
       where: 'id = ?',
       whereArgs: [habit.id],
     );
@@ -148,67 +168,4 @@ class DatabaseHelper {
       whereArgs: [id],
     );
   }
-  Future<int> deleteCompletionForHabitAndDate(int habitId, int dateTimestamp) async {
-  final db = await database;
-  return await db.delete(
-    'completions',
-    where: 'habitId = ? AND completionDate = ?',
-    whereArgs: [habitId, dateTimestamp],
-  );
 }
-}
-
-// Add this method to your Habit class (in lib/models/habit.dart)
-// This is needed to convert Habit objects to a Map for database operations.
-
-extension HabitToMap on Habit {
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id, // Make id nullable in the Habit class or handle null
-      'name': name,
-      'currentStreak': currentStreak,
-      'longestStreak': longestStreak,
-      'imagePath': imagePath,
- 'iconCodePoint': iconCodePoint,
-    };
-  }
- Map<String, dynamic> toMapWithoutId() {
- return {
- 'name': name,
- 'currentStreak': currentStreak,
- 'longestStreak': longestStreak,
- 'imagePath': imagePath,
- 'iconCodePoint': iconCodePoint,
- };
-  }
-  Future<int> deleteCompletionForHabitAndDate(int habitId, int dateTimestamp) async {
-  final db = await database;
-  return await db.delete(
-    'completions',
-    where: 'habitId = ? AND completionDate = ?',
-    whereArgs: [habitId, dateTimestamp],
-  );
-}
-
-}
-// You will also need to update your Habit class to include an optional 'id' field
-// and potentially update the constructor.
-/*
-class Habit {
-  final int? id; // Make id nullable
-  final String name;
-  final int currentStreak;
-  final int longestStreak;
-  final String imagePath;
-
-  Habit({
-    this.id, // Add id to constructor
-    required this.name,
-    required this.currentStreak,
-    required this.longestStreak,
-    required this.imagePath,
-  });
-
-  // ... rest of your Habit class
-}
-*/

@@ -45,8 +45,8 @@ class WelcomeScreen extends StatelessWidget {
                   child: Text('Get Started'),
                 ),
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.blue, // Button color
-                  onPrimary: Colors.white, // Text color
+                  backgroundColor: Colors.blue, // Button color
+                  foregroundColor: Colors.white, // Text color
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
