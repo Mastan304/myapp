@@ -6,6 +6,9 @@ import 'package:myapp/utils/date_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math';
+import 'package:myapp/utils/date_utils.dart' as DateUtils;
+
+
 
 class HabitDetailsScreen extends StatefulWidget {
   final Habit habit;
@@ -24,6 +27,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
   double _overallCompletionRate = 0.0;
   double _weeklyCompletionRate = 0.0;
 
+
   @override
   void initState() {
     super.initState();
@@ -39,16 +43,16 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
         final completedDates = completions
             .map((completion) => DateTime.fromMillisecondsSinceEpoch(completion.completionDate))
             .toList();
-        _currentStreak = DateUtils.calculateCurrentStreak(completedDates);
-        _longestStreak = DateUtils.calculateLongestStreak(completedDates);
+        _currentStreak = DateUtils.calculateCurrentStreak(completedDates); // Call on the instance
+        _longestStreak = _dateUtils.calculateLongestStreak(completedDates); // Call on the instance
 
         // Calculate completion rates
         final habitCreationDate = DateTime.fromMillisecondsSinceEpoch(widget.habit.createdTime);
-        _overallCompletionRate = DateUtils.calculateOverallCompletionRate(completedDates, habitCreationDate);
+        _overallCompletionRate = _dateUtils.calculateOverallCompletionRate(completedDates, habitCreationDate); // Call on the instance
 
         final now = DateTime.now();
         final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        _weeklyCompletionRate = DateUtils.calculateCompletionRate(completedDates, startOfWeek, now);
+        _weeklyCompletionRate = _dateUtils.calculateCompletionRate(completedDates, startOfWeek, now); // Call on the instance
 
       });
     }
@@ -130,7 +134,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
               return const Text('');
             }
             final date = sortedDays[index];
-            return SideTitleWidget(
+            return widge(
               axisSide: meta.axisSide,
               space: 4.0,
               child: Text(DateFormat('MMM dd').format(date), style: const TextStyle(fontSize: 10)),
@@ -166,8 +170,8 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
     final now = DateTime.now();
     final startDate = completedDates.isNotEmpty
         ? completedDates.reduce((a, b) => a.isBefore(b) ? a : b)
-        : now;
-    final endDate = now;
+        : DateTime(now.year, now.month, now.day).subtract(const Duration(days: 365)); // Show at least a year if no completions
+    final endDate = DateTime(now.year, now.month, now.day);
 
     // Generate all dates within the range
     final allDates = List<DateTime>.generate(
@@ -248,13 +252,29 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Habit Name
+              
+              Text(
+  widget.habit.name,
+  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+  overflow: TextOverflow.ellipsis, // Add ellipsis for overflow
+  maxLines: 2, // Limit to a maximum of 2 lines
+),
+Text(
+  widget.habit.description ?? 'No description provided.',
+  style: TextStyle(
+    fontSize: 16.0,
+    color: Colors.grey[600],
+  ),
+  overflow: TextOverflow.ellipsis,
+  maxLines: 3,
+),
+
               Text(
                 widget.habit.name,
-                style: Theme.of(context).textTheme.headline5?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
               Text(
-                'Track your daily runs to improve fitness and mental clarity.', // Placeholder description
+                widget.habit.description ?? 'No description provided.', // Use actual habit description
                 style: TextStyle(
                   fontSize: 16.0,
                   color: Colors.grey[600],
@@ -284,7 +304,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                    alignment: BarChartAlignment.spaceAround,
                     maxY: _completions.isNotEmpty
                       ? _completions
-                          .map((c) => c.completionDate)
+                          .map((c) => DateTime.fromMillisecondsSinceEpoch(c.completionDate))
                           .toList()
                           .length
                           .toDouble()
@@ -322,8 +342,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                     child: Container(
                       height: 100.0,
                       color: Colors.blueGrey[100], // Placeholder color
-                      child: Center(child: Text('Total Completions
-${_completions.length}')), // Placeholder
+                      child: Center(child: Text('Total Completions\n${_completions.length}')), // Placeholder
                     ),
                   ),
                   SizedBox(width: 16.0),
@@ -331,8 +350,7 @@ ${_completions.length}')), // Placeholder
                     child: Container(
                       height: 100.0,
                       color: Colors.blueGrey[100], // Placeholder color
-                      child: Center(child: Text('Current Streak
-${_currentStreak}')), // Placeholder
+                      child: Center(child: Text('Current Streak\n${_currentStreak}')), // Placeholder
                     ),
                   ),
                    SizedBox(width: 16.0),
@@ -340,8 +358,7 @@ ${_currentStreak}')), // Placeholder
                     child: Container(
                       height: 100.0,
                       color: Colors.blueGrey[100], // Placeholder color
-                      child: Center(child: Text('Longest Streak
-${_longestStreak}')), // Placeholder
+                      child: Center(child: Text('Longest Streak\n${_longestStreak}')), // Placeholder
                     ),
                   ),
                 ],
@@ -353,8 +370,7 @@ ${_longestStreak}')), // Placeholder
                     child: Container(
                       height: 100.0,
                       color: Colors.blueGrey[100], // Placeholder color
-                      child: Center(child: Text('Overall Completion Rate
-${_overallCompletionRate.toStringAsFixed(1)}%')), // Placeholder
+                      child: Center(child: Text('Overall Completion Rate\n${_overallCompletionRate.toStringAsFixed(1)}%')), // Placeholder
                     ),
                   ),
                   SizedBox(width: 16.0),
@@ -362,8 +378,7 @@ ${_overallCompletionRate.toStringAsFixed(1)}%')), // Placeholder
                     child: Container(
                       height: 100.0,
                       color: Colors.blueGrey[100], // Placeholder color
-                      child: Center(child: Text('Weekly Completion Rate
-${_weeklyCompletionRate.toStringAsFixed(1)}%')), // Placeholder
+                      child: Center(child: Text('Weekly Completion Rate\n${_weeklyCompletionRate.toStringAsFixed(1)}%')), // Placeholder
                     ),
                   ),
                 ],

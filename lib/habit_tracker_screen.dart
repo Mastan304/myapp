@@ -31,7 +31,7 @@ class _HabitWidgetState extends flutter_material.State<HabitWidget> {
   Future<void> _checkCompletionStatus() async {
     if (widget.habit.id != null) {
       final completed = await DatabaseHelper().isHabitCompletedToday(widget.habit.id!);
-      flutter_material.setState(() {
+      setState(() {
         _isCompletedToday = completed;
       });
     }
@@ -88,7 +88,7 @@ class _HabitWidgetState extends flutter_material.State<HabitWidget> {
       int newCurrentStreak = widget.habit.currentStreak;
       if (lastCompletionDate == null) {
         newCurrentStreak = 1;
-      } else if (DateUtils.isYesterday(lastCompletionDate!.millisecondsSinceEpoch)) {
+      } else if (DateUtils.isYesterday(lastCompletionDate)) { // Pass DateTime object directly
         newCurrentStreak++;
       } else {
         newCurrentStreak = 1;
@@ -138,7 +138,7 @@ class _HabitWidgetState extends flutter_material.State<HabitWidget> {
             flutter_material.SizedBox(height: 4.0),
              flutter_material.Text(
               'Current: ${widget.habit.currentStreak} days | Longest: ${widget.habit.longestStreak} days',
-              style: const flutter_material.TextStyle(
+              style: flutter_material.TextStyle( // Removed const
                 fontSize: 14.0,
                 color: flutter_material.Colors.grey[600],
               ),
@@ -179,7 +179,7 @@ class _HabitWidgetState extends flutter_material.State<HabitWidget> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -200,7 +200,7 @@ class _HabitTrackerScreenState extends flutter_material.State<HabitTrackerScreen
 
   Future<void> _loadHabits() async {
     final habits = await DatabaseHelper().getHabits();
-    flutter_material.setState(() {
+    setState(() {
       _habits = habits;
     });
   }

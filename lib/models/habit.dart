@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class Habit {
   int? id;
   final String name;
+  String? description; // Added description field
   int currentStreak;
   int longestStreak;
   final String imagePath;
@@ -18,6 +19,7 @@ class Habit {
   Habit({
     this.id,
     required this.name,
+    this.description, // Added to constructor
     this.currentStreak = 0,
     this.longestStreak = 0,
     this.imagePath = '',
@@ -35,6 +37,7 @@ class Habit {
     return {
       'id': id,
       'name': name,
+      'description': description, // Added to toMap
       'currentStreak': currentStreak,
       'longestStreak': longestStreak,
       'imagePath': imagePath,
@@ -53,6 +56,7 @@ class Habit {
     return Habit(
       id: map['id'] as int?,
       name: map['name'] as String,
+      description: map['description'] as String?, // Added to fromMap
       currentStreak: map['currentStreak'] as int,
       longestStreak: map['longestStreak'] as int,
       imagePath: map['imagePath'] as String,
@@ -70,6 +74,7 @@ class Habit {
   Habit copyWith({
     int? id,
     String? name,
+    String? description, // Added to copyWith
     int? currentStreak,
     int? longestStreak,
     String? imagePath,
@@ -85,6 +90,7 @@ class Habit {
     return Habit(
       id: id ?? this.id,
       name: name ?? this.name,
+      description: description ?? this.description, // Added to copyWith return
       currentStreak: currentStreak ?? this.currentStreak,
       longestStreak: longestStreak ?? this.longestStreak,
       imagePath: imagePath ?? this.imagePath,

@@ -1,38 +1,48 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
 
 class NotificationService {
-  final FlutterLocalNotificationsPlugin notificationsPlugin;
+  final FlutterLocalNotificationsPlugin notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  NotificationService() : notificationsPlugin = FlutterLocalNotificationsPlugin() {
-    _configureLocalTimezone();
+  Future<void> initNotification() async {
+    tzdata.initializeTimeZones(); // Initialize timezone data
+
+    AndroidInitializationSettings initializationSettingsAndroid =
+        const AndroidInitializationSettings('app_icon'); // Replace 'app_icon' with your actual app icon name
+
+    InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+
+    await notificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: (String? payload) async {
+          // Handle notification taps if needed
+        });
   }
 
-  void _configureLocalTimezone() {
-    tzdata.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('America/Detroit')); // Or any other appropriate timezone
-  }
-
-  Future<void> scheduleDailyNotification({
-    required int id,
-    required String title,
-    required String body,
-    required TimeOfDay time,
-    List<int>? days,
+  Future<void> scheduleNotification({
+    int id = 0,
+    String? title,
+    String? body,
+    TimeOfDay? time,
+    List<int>? days, // List of weekdays (1 for Monday, 7 for Sunday)
   }) async {
-    final now = tz.TZDateTime.now(tz.local);
+    if (time == null) return;
+
     tz.TZDateTime scheduledDate = tz.TZDateTime(
       tz.local,
-      now.year,
-      now.month,
-      now.day,
+      tz.TZDateTime.now(tz.local).year,
+      tz.TZDateTime.now(tz.local).month,
+      tz.TZDateTime.now(tz.local).day,
       time.hour,
       time.minute,
     );
 
-    if (scheduledDate.isBefore(now)) {
+    // If the scheduled time is in the past for today, schedule for the next day
+    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local)) && (days == null || days.isEmpty)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
@@ -53,7 +63,6 @@ class NotificationService {
               importance: Importance.high,
               priority: Priority.high,
             ),
-            iOS: DarwinNotificationDetails(),
           ),
           androidAllowWhileIdle: true,
           uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
@@ -75,7 +84,6 @@ class NotificationService {
             importance: Importance.high,
             priority: Priority.high,
           ),
-          iOS: DarwinNotificationDetails(),
         ),
         androidAllowWhileIdle: true,
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
@@ -85,30 +93,30 @@ class NotificationService {
   }
 
   tz.TZDateTime _nextInstanceOfWeekday(TimeOfDay time, int weekday) {
-    tz.TZDateTime scheduledDate = tz.TZDateTime(
-      tz.local,
-      tz.TZDateTime.now(tz.local).year,
-      tz.TZDateTime.now(tz.local).month,
-      tz.TZDateTime.now(tz.local).day,
-      time.hour,
-      time.minute,
-    );
+      tz.TZDateTime scheduledDate = tz.TZDateTime(
+        tz.local,
+        tz.TZDateTime.now(tz.local).year,
+        tz.TZDateTime.now(tz.local).month,
+        tz.TZDateTime.now(tz.local).day,
+        time.hour,
+        time.minute,
+      );
 
-    while (scheduledDate.weekday != weekday) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
+      while (scheduledDate.weekday != weekday) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
 
-    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
-      scheduledDate = scheduledDate.add(const Duration(days: 7));
-    }
-    return scheduledDate;
-  }
+       if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
+         scheduledDate = scheduledDate.add(const Duration(days: 7));
+       }
+       return scheduledDate;
+     }
 
-  Future<void> cancelNotification(int id) async {
-    await notificationsPlugin.cancel(id);
-  }
+     Future<void> cancelNotification(int id) async {
+       await notificationsPlugin.cancel(id);
+     }
 
-  Future<void> cancelAllNotifications() async {
-    await notificationsPlugin.cancelAll();
-  }
-}
+     Future<void> cancelAllNotifications() async {
+       await notificationsPlugin.cancelAll();
+     }
+   }

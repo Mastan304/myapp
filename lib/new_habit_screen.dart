@@ -302,7 +302,7 @@ class _NewHabitScreenState extends State<NewHabitScreen> {
                 final habitId = await DatabaseHelper().insertHabit(newHabit);
 
                 if (_selectedTime != null) {
-                  await NotificationService().scheduleDailyNotification(
+                  await NotificationService().scheduleNotification(
                     id: habitId, // Use the habit's ID for notification ID
                     title: 'Habit Reminder',
                     body: 'Time to ${_habitNameController.text}!',

@@ -8,23 +8,15 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterL
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
-    onDidReceiveLocalNotification: (id, title, body, payload) async {},
-  );
+  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('app_icon'); // Replace 'app_icon' with your app's launcher icon name
 
-  final InitializationSettings initializationSettings = InitializationSettings(
-    android: AndroidInitializationSettings('app_icon'), // Replace 'app_icon' with your app's launcher icon name
-    iOS: initializationSettingsDarwin,
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    // iOS initialization settings are handled by the DarwinInitializationSettings
   );
 
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
-    onSelectNotification: (String? payload) async {
-      // Handle notification tap
-      if (payload != null) {
-        debugPrint('notification payload: ' + payload);
-      }
-    },
   );
 
   // Access the database getter to ensure initialization
@@ -44,7 +36,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const HabitTrackerScreen(), // Set your main habit tracker screen here
+      home: HabitTrackerScreen(), // Set your main habit tracker screen here
     );
   }
 }

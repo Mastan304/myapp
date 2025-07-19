@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as flutter_material;
 import 'package:myapp/models/habit.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:myapp/database/database_helper.dart';
@@ -6,16 +6,16 @@ import 'package:myapp/models/completion.dart';
 import 'package:myapp/utils/date_utils.dart';
 
 
-class HabitCompletionScreen extends StatefulWidget {
+class HabitCompletionScreen extends flutter_material.StatefulWidget {
   final Habit habit;
 
-  HabitCompletionScreen({required this.habit});
+  HabitCompletionScreen({flutter_material.Key? key, required this.habit}) : super(key: key);
 
   @override
   _HabitCompletionScreenState createState() => _HabitCompletionScreenState();
 }
 
-class _HabitCompletionScreenState extends State<HabitCompletionScreen> {
+class _HabitCompletionScreenState extends flutter_material.State<HabitCompletionScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   List<DateTime> _completedDates = [];
@@ -39,12 +39,12 @@ class _HabitCompletionScreenState extends State<HabitCompletionScreen> {
 
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.habit.name),
+  flutter_material.Widget build(flutter_material.BuildContext context) {
+    return flutter_material.Scaffold(
+      appBar: flutter_material.AppBar(
+        title: flutter_material.Text(widget.habit.name),
       ),
-      body: Column(
+      body: flutter_material.Column(
         children: [
           TableCalendar(
             firstDay: DateTime.utc(2010, 1, 1),
@@ -55,66 +55,63 @@ class _HabitCompletionScreenState extends State<HabitCompletionScreen> {
               return isSameDay(_selectedDay, day);
             },
             onDaySelected: (selectedDay, focusedDay) async {
-  if (!isSameDay(_selectedDay, selectedDay)) {
-    setState(() {
-      _selectedDay = selectedDay;
-      _focusedDay = focusedDay;
-    });
+              if (!isSameDay(_selectedDay, selectedDay)) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
 
-    // Check if the habit was completed on this day
-    final isCompleted = _completedDates.any(
-        (date) => DateUtils.isSameDay(date.millisecondsSinceEpoch, selectedDay.millisecondsSinceEpoch));
+                // Check if the habit was completed on this day
+                final isCompleted = _completedDates.any(
+                    (date) => isSameDay(date, selectedDay));
 
-    if (isCompleted) {
-      // Unmark completion
-      if (widget.habit.id != null) {
-        await DatabaseHelper().deleteCompletionForHabitAndDate(
-            widget.habit.id!, selectedDay.millisecondsSinceEpoch);
-        setState(() {
-          _completedDates.removeWhere(
-              (date) => DateUtils.isSameDay(date.millisecondsSinceEpoch, selectedDay.millisecondsSinceEpoch));
-        });
+                if (isCompleted) {
+                  // Unmark completion
+                  if (widget.habit.id != null) {
+                    await DatabaseHelper().deleteCompletionForHabitAndDate(
+                        widget.habit.id!, selectedDay.millisecondsSinceEpoch);
+                    setState(() {
+                      _completedDates.removeWhere(
+                          (date) => isSameDay(date, selectedDay));
+                    });
 
-        // Recalculate streaks after unmarking
-        final currentStreak = DateUtils.calculateCurrentStreak(_completedDates);
-        final longestStreak = DateUtils.calculateLongestStreak(_completedDates);
+                    // Recalculate streaks after unmarking
+                    final currentStreak = DateUtils.calculateCurrentStreak(_completedDates);
+                    final longestStreak = DateUtils.calculateLongestStreak(_completedDates);
 
-        // Update habit object with new streaks
-        widget.habit.currentStreak = currentStreak;
-        widget.habit.longestStreak = longestStreak;
+                    // Update habit object with new streaks
+                    widget.habit.currentStreak = currentStreak;
+                    widget.habit.longestStreak = longestStreak;
 
-        // Update the habit in the database
-        await DatabaseHelper().updateHabit(widget.habit);
-      }
-    } else {
-      // Mark completion
-      if (widget.habit.id != null) {
-        final completion = Completion(
-            habitId: widget.habit.id!,
-            completionDate: selectedDay.millisecondsSinceEpoch);
-        await DatabaseHelper().insertCompletion(completion);
-        setState(() {
-          _completedDates.add(selectedDay);
-        });
+                    // Update the habit in the database
+                    await DatabaseHelper().updateHabit(widget.habit);
+                  }
+                } else {
+                  // Mark completion
+                  if (widget.habit.id != null) {
+                    final completion = Completion(
+                        habitId: widget.habit.id!,
+                        completionDate: selectedDay.millisecondsSinceEpoch);
+                    await DatabaseHelper().insertCompletion(completion);
+                    setState(() {
+                      _completedDates.add(selectedDay);
+                    });
 
-        // Recalculate streaks after marking
-        final currentStreak = DateUtils.calculateCurrentStreak(_completedDates);
-        final longestStreak = DateUtils.calculateLongestStreak(_completedDates);
+                    // Recalculate streaks after marking
+                    final currentStreak = DateUtils.calculateCurrentStreak(_completedDates);
+                    final longestStreak = DateUtils.calculateLongestStreak(_completedDates);
 
 
-        // Update habit object with new streaks
-        widget.habit.currentStreak = currentStreak;
-        widget.habit.longestStreak = longestStreak;
+                    // Update habit object with new streaks
+                    widget.habit.currentStreak = currentStreak;
+                    widget.habit.longestStreak = longestStreak;
 
-        // Update the habit in the database
-        await DatabaseHelper().updateHabit(widget.habit);
-      }
-    }
-  }
-}
-
-  }
-},
+                    // Update the habit in the database
+                    await DatabaseHelper().updateHabit(widget.habit);
+                  }
+                }
+              }
+            },
 
             onPageChanged: (focusedDay) {
               _focusedDay = focusedDay;
